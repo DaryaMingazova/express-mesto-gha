@@ -72,7 +72,6 @@ const getUsers = (req, res) => {
   User.find({})
     .then((users) => res.status(200).send(users))
     .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: DEFAULT_ERROR_MESSAGE }));
-    return;
 };
 
 const getUser = (req, res) => {
