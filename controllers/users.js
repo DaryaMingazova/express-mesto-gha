@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 
 const ErrorBadRequest = require('../utils/errors/bad-request'); // 400
-const ErrorUnauthorized = require('../utils/errors/unauthorized'); // 401
+
 const ErrorNotFound = require('../utils/errors/not-found'); // 404
 const ErrorConflict = require('../utils/errors/conflict'); // 409
 
@@ -28,9 +28,9 @@ const createUser = (req, res, next) => {
         about,
         avatar,
       })
-        .then((user) => {
-          res.status(201).send(user);
-        })
+        .then(() => res.send({
+          name, about, avatar, email,
+        }))
         .catch((err) => {
           if (err.name === 'MongoServerError' || err.code === 11000) {
             next(new ErrorConflict('Пользователь с такой почтой уже зарегистрирован.'));
@@ -47,7 +47,7 @@ const createUser = (req, res, next) => {
 const login = (req, res, next) => {
   const { email } = req.body;
 
-  User.findOne({ email }).select('+password')
+  User.findUserByCredentials({ email })
     .then((user) => {
       const token = getJwtToken(user._id);
       res
@@ -57,17 +57,12 @@ const login = (req, res, next) => {
         })
         .send({ message: 'Успешная авторизация.' });
     })
-    .catch(() => {
-      next(new ErrorUnauthorized('Неправильные почта или пароль.'));
-    });
+    .catch(next);
 };
 
 const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => {
-      if (users.length === 1) {
-        throw new ErrorNotFound('Пользователи не найдены.');
-      }
       res.send(users);
     })
     .catch(next);
@@ -92,7 +87,7 @@ const getCurrentUserInfo = (req, res, next) => {
 const updateUser = (req, res, next) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(
-    req.user._id,
+    req.user.payload,
     { name, about },
     {
       new: true,
@@ -115,7 +110,7 @@ const updateUser = (req, res, next) => {
 const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(
-    req.user._id,
+    req.user.payload,
     { avatar },
     {
       new: true,

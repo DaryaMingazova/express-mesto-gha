@@ -33,7 +33,7 @@ const deleteCard = (req, res, next) => {
       if (JSON.stringify(card.owner) !== JSON.stringify(req.user.payload)) {
         return next(new ErrorForbidden('Нельзя удалять чужие карточки.'));
       }
-      return card.remove()
+      return card.deleteOne()
         .then(() => res.send({ message: 'Карточка удалена.' }));
     })
     .catch(next);
@@ -42,7 +42,7 @@ const deleteCard = (req, res, next) => {
 const likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
-    { $addToSet: { likes: req.user._id } },
+    { $addToSet: { likes: req.user.payload } },
     { new: true },
   )
     .orFail(() => new ErrorNotFound('Карточка не найдена.'))
@@ -53,7 +53,7 @@ const likeCard = (req, res, next) => {
 const deleteLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
-    { $pull: { likes: req.user._id } },
+    { $pull: { likes: req.user.payload } },
     { new: true },
   )
     .orFail(() => new ErrorNotFound('Карточка не найдена.'))
